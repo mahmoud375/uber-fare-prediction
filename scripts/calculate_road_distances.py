@@ -23,6 +23,7 @@ CONCURRENCY = 128                   # tune: roughly 2-4x the CPU cores given to 
 CHUNK_SIZE = 25_000                 # checkpoint after every chunk
 MAX_RETRIES = 3
 REQUEST_TIMEOUT = 10                # seconds, per request
+RADIUS_M = 300                      # reject points farther than this from any road (else OSRM snaps to a far road)
 
 # Per-row status codes
 PENDING, OK, NO_ROUTE, FAILED = 0, 1, 2, 3
@@ -62,6 +63,7 @@ async def fetch_route(session, sem, c):
         f"{OSRM_URL}/route/v1/driving/"
         f"{p_lon:.6f},{p_lat:.6f};{d_lon:.6f},{d_lat:.6f}"
         "?overview=false&steps=false&alternatives=false&skip_waypoints=true"
+        f"&radiuses={RADIUS_M};{RADIUS_M}"
     )
     async with sem:
         for attempt in range(MAX_RETRIES):

@@ -1,9 +1,46 @@
+# Python environments & packages
 .venv/
+env/
+venv/
+ENV/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints & cache
 .ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# IDEs & Editors configuration
+.idea/
+.vscode/
+*.swp
+*.swo
 .DS_Store
 
-# big / regenerable stuff
+# Package management artifacts (keep uv.lock / pyproject.toml tracked)
+.uv/
+
+# Datasets (raw & processed)
 data/
+data/raw/*
+data/processed/*
+*.csv
+*.parquet
+*.zip
+*.tar.gz
+
+# OSRM files & NYC map extracts (large binaries)
 osrm_nyc/
+osrm_nyc/*
+*.osm.pbf
+*.osrm*
+
+# Machine Learning model checkpoints & logs
+models/
+*.pkl
+*.joblib
+*.onnx
+runs/
+wandb/
+.pytest_cache/
