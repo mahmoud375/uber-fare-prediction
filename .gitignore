@@ -25,6 +25,7 @@ __pycache__/
 # but keep the cleaned dataset (the one all notebooks start from) tracked
 data/raw/*
 data/processed/uber_with_road_distances.csv
+data/processed/uber_cleaned_data.csv
 data/processed/train_processed.csv
 data/processed/test_processed.csv
 data/processed/y_train.csv
