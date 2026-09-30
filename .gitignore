@@ -21,25 +21,24 @@ __pycache__/
 # Package management artifacts (keep uv.lock / pyproject.toml tracked)
 .uv/
 
-# Datasets (raw & processed)
-data/
+# Datasets — ignore the raw, heavy source file and derived/regenerable files,
+# but keep the cleaned dataset (the one all notebooks start from) tracked
 data/raw/*
-data/processed/*
-*.csv
+data/processed/uber_with_road_distances.csv
+data/processed/train_processed.csv
+data/processed/test_processed.csv
+data/processed/y_train.csv
+data/processed/y_test.csv
+data/processed/temp_progress.npz
 *.parquet
-*.zip
-*.tar.gz
 
 # OSRM files & NYC map extracts (large binaries)
 osrm_nyc/
-osrm_nyc/*
 *.osm.pbf
 *.osrm*
 
-# Machine Learning model checkpoints & logs
-models/
+# Machine Learning checkpoints & logs (final_pipeline.joblib is kept tracked)
 *.pkl
-*.joblib
 *.onnx
 runs/
 wandb/
