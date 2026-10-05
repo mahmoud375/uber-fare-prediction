@@ -21,6 +21,11 @@ __pycache__/
 # Package management artifacts (keep uv.lock / pyproject.toml tracked)
 .uv/
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
 # Datasets — ignore the raw, heavy source file and derived/regenerable files,
 # but keep the cleaned dataset (the one all notebooks start from) tracked
 data/raw/*
