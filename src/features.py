@@ -302,6 +302,93 @@ def query_osrm_road_distance(
     raise OSRMRouteNotFoundError(f"OSRM routing failed with code: '{code}'.")
 
 
+def snap_to_nearest_road(
+    lat: float,
+    lon: float,
+    osrm_url: str = OSRM_DEFAULT_URL,
+    max_distance: Optional[float] = 150.0,
+) -> Dict[str, Any]:
+    """
+    Query the local OSRM Nearest service to snap a coordinate to the closest drivable road.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude in decimal degrees.
+    lon : float
+        Longitude in decimal degrees.
+    osrm_url : str, optional
+        Base URL for the OSRM routing service (default http://127.0.0.1:5000).
+    max_distance : float, optional
+        Maximum allowed snapping distance in meters (default 150.0).
+        If the closest road is farther than this threshold, raises OSRMRouteNotFoundError.
+
+    Returns
+    -------
+    dict
+        Dictionary containing:
+          - 'snapped_lat': float
+          - 'snapped_lon': float
+          - 'distance': float (in meters)
+          - 'street_name': str
+
+    Raises
+    ------
+    OSRMConnectionError
+        If local OSRM routing server cannot be reached or times out.
+    OSRMRouteNotFoundError
+        If no road is found or the nearest road exceeds max_distance.
+    """
+    url = f"{osrm_url}/nearest/v1/driving/{lon:.6f},{lat:.6f}?number=1"
+    try:
+        resp = requests.get(url, proxies={"http": None, "https": None}, timeout=5)
+    except requests.exceptions.RequestException as e:
+        raise OSRMConnectionError(
+            f"Failed to connect to local OSRM routing server at {osrm_url}. "
+            "Ensure the Docker container 'osrm-service' is running."
+        ) from e
+
+    try:
+        data = resp.json()
+    except Exception:
+        data = None
+
+    if resp.status_code == 200 and data and data.get("code") == "Ok":
+        waypoints = data.get("waypoints", [])
+        if not waypoints:
+            raise OSRMRouteNotFoundError("OSRM nearest service returned no waypoints.")
+
+        wp = waypoints[0]
+        snapped_lon, snapped_lat = wp["location"]
+        distance = float(wp.get("distance", 0.0))
+        street_name = wp.get("name", "")
+
+        if max_distance is not None and distance > max_distance:
+            raise OSRMRouteNotFoundError(
+                f"Nearest road '{street_name}' is {distance:.1f}m away, which exceeds the {max_distance:.0f}m threshold."
+            )
+
+        return {
+            "snapped_lat": float(snapped_lat),
+            "snapped_lon": float(snapped_lon),
+            "distance": float(distance),
+            "street_name": str(street_name),
+        }
+
+    if data and data.get("code") in ("NoSegment", "NoRoute", "InvalidQuery", "InvalidValue"):
+        code = data.get("code")
+        msg = data.get("message", "No road segment found")
+        raise OSRMRouteNotFoundError(f"OSRM nearest service failed ({code}: {msg}).")
+
+    if resp.status_code != 200:
+        raise OSRMConnectionError(
+            f"OSRM returned unexpected HTTP status {resp.status_code}: {resp.text}"
+        )
+
+    code = data.get("code") if data else "Unknown"
+    raise OSRMRouteNotFoundError(f"OSRM nearest service failed with code: '{code}'.")
+
+
 def build_feature_row(
     raw_input: Dict[str, Any],
     osrm_url: str = OSRM_DEFAULT_URL,

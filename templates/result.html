@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fare Prediction Result | Uber Fare Predictor</title>
+  <style>
+    :root {
+      --primary: #000000;
+      --primary-accent: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --success: #16a34a;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 32px 16px;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+      overflow: hidden;
+    }
+
+    /* Fare Hero Card */
+    .fare-hero {
+      background: linear-gradient(135deg, #09090b 0%, #1e293b 100%);
+      color: #ffffff;
+      padding: 36px 24px;
+      text-align: center;
+    }
+
+    .fare-title {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .fare-amount {
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 8px 0;
+      color: #ffffff;
+    }
+
+    .fare-subtext {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+    }
+
+    /* Breakdown Section */
+    .breakdown-body {
+      padding: 28px 24px;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .grid-breakdown {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 520px) {
+      .grid-breakdown {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .metric-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Locations summary */
+    .location-summary {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 28px;
+    }
+
+    .loc-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+
+    .loc-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .loc-icon {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    .loc-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .loc-coords {
+      color: var(--text-muted);
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+
+    /* Actions */
+    .actions {
+      text-align: center;
+    }
+
+    .btn-new {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      padding: 14px;
+      background: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-new:hover {
+      background: #27272a;
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+      <!-- Prominent Fare Display -->
+      <div class="fare-hero">
+        <div class="fare-title">Estimated Trip Fare</div>
+        <div class="fare-amount">${{ predicted_fare }}</div>
+        <div class="fare-subtext">Estimated using Gradient Boosting ML Model</div>
+      </div>
+
+      <!-- Breakdown & Sanity-Check Data -->
+      <div class="breakdown-body">
+        <h2 class="section-title">Enriched Trip Breakdown</h2>
+
+        <div class="grid-breakdown">
+          <!-- Road Distance -->
+          <div class="metric-card">
+            <div class="metric-label">Driving Distance (OSRM)</div>
+            <div class="metric-value">
+              <span>🚗</span>
+              <span>{{ road_distance_km }} km <small style="font-size:0.8rem; color:var(--text-muted);">({{ road_distance_miles }} mi)</small></span>
+            </div>
+          </div>
+
+          <!-- Live Weather -->
+          <div class="metric-card">
+            <div class="metric-label">Live Weather (Open-Meteo)</div>
+            <div class="metric-value">
+              {% if weather == 'sunny' %}☀️
+              {% elif weather == 'cloudy' %}☁️
+              {% elif weather == 'rainy' %}🌧️
+              {% elif weather == 'stormy' %}⛈️
+              {% elif weather == 'windy' %}💨
+              {% endif %}
+              <span>{{ weather | capitalize }}</span>
+            </div>
+          </div>
+
+          <!-- Live Traffic -->
+          <div class="metric-card">
+            <div class="metric-label">Live Traffic (TomTom Flow)</div>
+            <div class="metric-value">
+              {% if 'Flow' in traffic_condition %}🟢
+              {% elif 'Dense' in traffic_condition %}🟡
+              {% else %}🔴
+              {% endif %}
+              <span>{{ traffic_condition }}</span>
+            </div>
+          </div>
+
+          <!-- Passenger Count -->
+          <div class="metric-card">
+            <div class="metric-label">Passengers</div>
+            <div class="metric-value">
+              <span>👥</span>
+              <span>{{ passenger_count }} {{ 'Passenger' if passenger_count == 1 else 'Passengers' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coordinates & Datetime -->
+        <div class="location-summary">
+          <div class="loc-row">
+            <span class="loc-icon">🟢</span>
+            <div>
+              <div class="loc-title">Pickup Coordinates</div>
+              <div class="loc-coords">{{ pickup_lat }}, {{ pickup_lon }}</div>
+            </div>
+          </div>
+          <div class="loc-row">
+            <span class="loc-icon">🔴</span>
+            <div>
+              <div class="loc-title">Dropoff Coordinates</div>
+              <div class="loc-coords">{{ dropoff_lat }}, {{ dropoff_lon }}</div>
+            </div>
+          </div>
+          <div class="loc-row">
+            <span class="loc-icon">🕒</span>
+            <div>
+              <div class="loc-title">Pickup Date & Time</div>
+              <div class="loc-coords">{{ pickup_datetime }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="actions">
+          <a href="/" class="btn-new">← Make Another Prediction</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

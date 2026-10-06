@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uber Fare Predictor | New York City</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --primary: #000000;
+      --primary-accent: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--primary);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-top: 4px;
+    }
+
+    /* Error alert banner */
+    .alert-error {
+      background-color: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+    }
+
+    /* Layout grid */
+    .app-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 860px) {
+      .app-layout {
+        grid-template-columns: 1.6fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Map Instructions Banner */
+    .map-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn-reset {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-reset:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    #map {
+      height: 480px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    /* Point Badges */
+    .points-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .point-card {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .point-card.pickup {
+      border-left: 4px solid var(--success);
+    }
+
+    .point-card.dropoff {
+      border-left: 4px solid var(--danger);
+    }
+
+    .point-card .label {
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+    }
+
+    .point-card .coords {
+      color: var(--text-muted);
+      font-family: monospace;
+      margin-top: 4px;
+      font-size: 0.8rem;
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    input[type="datetime-local"],
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: #ffffff;
+      transition: border-color 0.15s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary-accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .info-box {
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .info-box ul {
+      margin-left: 18px;
+      margin-top: 6px;
+    }
+
+    /* Submit Button */
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: #262626;
+      transform: translateY(-1px);
+    }
+
+    .btn-submit:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .submit-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* Custom Leaflet Pin Markers */
+    .custom-pin {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      border: 2px solid white;
+    }
+    .pin-pickup { background: #16a34a; }
+    .pin-dropoff { background: #dc2626; }
+
+    /* In-flight Snap Spinner */
+    .snap-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(37, 99, 235, 0.25);
+      border-radius: 50%;
+      border-top-color: #2563eb;
+      animation: spin 0.8s linear infinite;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Snap Toast Notification */
+    .snap-toast {
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .snap-toast.success {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+    }
+    .snap-toast.error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>NYC Uber Fare Estimator</h1>
+      <p class="subtitle">Select your pickup and dropoff points on the map to estimate the fare using live weather, traffic & ML model.</p>
+    </header>
+
+    {% if error %}
+    <div class="alert-error" role="alert">
+      <span style="font-size: 1.25rem; align-self: flex-start;">⚠️</span>
+      <div>
+        <div style="font-weight: 600;">{{ error }}</div>
+        {% if error_detail %}
+        <div style="margin-top: 6px; font-size: 0.8rem; color: #7f1d1d; opacity: 0.85; font-family: monospace;">
+          {{ error_detail }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="app-layout">
+      <!-- Left Column: Interactive Map -->
+      <div class="card">
+        <div class="map-banner">
+          <span id="map-status">📍 Step 1: Click anywhere on the map to place the <strong>Pickup</strong> point.</span>
+          <button type="button" class="btn-reset" id="reset-btn" onclick="resetPoints()">Reset Points</button>
+        </div>
+
+        <div id="snap-toast" class="snap-toast" style="display: none;"></div>
+
+        <div id="map"></div>
+
+        <div class="points-bar">
+          <div class="point-card pickup">
+            <div class="label">🟢 Pickup Point</div>
+            <div class="coords" id="pickup-coords-display">Not selected</div>
+          </div>
+          <div class="point-card dropoff">
+            <div class="label">🔴 Dropoff Point</div>
+            <div class="coords" id="dropoff-coords-display">Not selected</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Ride Parameters Form -->
+      <div class="card">
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 16px;">Trip Details</h2>
+
+        <form action="/predict" method="POST" id="fareForm">
+          <!-- Hidden inputs populated via map clicks -->
+          <input type="hidden" name="pickup_lat" id="pickup_lat" value="{{ form_values.pickup_lat if form_values else '' }}">
+          <input type="hidden" name="pickup_lon" id="pickup_lon" value="{{ form_values.pickup_lon if form_values else '' }}">
+          <input type="hidden" name="dropoff_lat" id="dropoff_lat" value="{{ form_values.dropoff_lat if form_values else '' }}">
+          <input type="hidden" name="dropoff_lon" id="dropoff_lon" value="{{ form_values.dropoff_lon if form_values else '' }}">
+
+          <!-- Pickup Datetime -->
+          <div class="form-group">
+            <label for="pickup_datetime">Pickup Date & Time</label>
+            <input 
+              type="datetime-local" 
+              name="pickup_datetime" 
+              id="pickup_datetime" 
+              required
+              value="{{ form_values.pickup_datetime if form_values and form_values.pickup_datetime else default_datetime }}"
+            >
+          </div>
+
+          <!-- Passenger Count -->
+          <div class="form-group">
+            <label for="passenger_count">Passenger Count (1–6)</label>
+            <input 
+              type="number" 
+              name="passenger_count" 
+              id="passenger_count" 
+              min="1" 
+              max="6" 
+              required
+              value="{{ form_values.passenger_count if form_values and form_values.passenger_count else '1' }}"
+            >
+          </div>
+
+          <!-- Live Feature Enrichment Info -->
+          <div class="info-box">
+            <strong>Automated Feature Pipeline:</strong>
+            <ul>
+              <li><strong>Road Distance:</strong> Queried in real-time via local OSRM.</li>
+              <li><strong>Live Weather:</strong> Pulled from Open-Meteo API.</li>
+              <li><strong>Live Traffic:</strong> Analyzed via TomTom Flow API.</li>
+              <li><strong>Model:</strong> Tuned Gradient Boosting Regressor pipeline.</li>
+            </ul>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn-submit" id="submitBtn" disabled>
+            Calculate Estimated Fare
+          </button>
+          <div class="submit-hint" id="submitHint">
+            Please set both Pickup and Dropoff points on the map.
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS CDN -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // 1. Define Tight NYC TLC Operational Bounding Box from cleaned dataset envelope
+    // Latitude: [40.4, 41.0], Longitude: [-74.3, -73.6]
+    const southWest = L.latLng(40.4, -74.3);
+    const northEast = L.latLng(41.0, -73.6);
+    const nycBounds = L.latLngBounds(southWest, northEast);
+
+    // Initial center on Midtown Manhattan
+    const nycCenter = [40.7580, -73.9855];
+
+    // Initialize Map with restricted panning bounds and minZoom
+    const map = L.map('map', {
+      center: nycCenter,
+      zoom: 12,
+      minZoom: 11,
+      maxZoom: 18,
+      maxBounds: nycBounds,
+      maxBoundsViscosity: 1.0 // Firm restriction: stops dragging outside the box
+    });
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      minZoom: 11,
+      bounds: nycBounds,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Subtle outline of the NYC TLC service envelope
+    L.rectangle(nycBounds, {
+      color: '#2563eb',
+      weight: 1.5,
+      dashArray: '5, 5',
+      fill: false,
+      opacity: 0.4
+    }).addTo(map);
+
+    // Ensure map tiles and container size stabilize properly
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+
+    // State
+    let pickupMarker = null;
+    let dropoffMarker = null;
+    let routeLine = null;
+    let currentStep = 'pickup'; // 'pickup' | 'dropoff' | 'done'
+
+    // DOM Elements
+    const mapStatus = document.getElementById('map-status');
+    const pickupCoordsDisplay = document.getElementById('pickup-coords-display');
+    const dropoffCoordsDisplay = document.getElementById('dropoff-coords-display');
+    const pickupLatInput = document.getElementById('pickup_lat');
+    const pickupLonInput = document.getElementById('pickup_lon');
+    const dropoffLatInput = document.getElementById('dropoff_lat');
+    const dropoffLonInput = document.getElementById('dropoff_lon');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitHint = document.getElementById('submitHint');
+
+    // Custom Icon Creators
+    function createPin(colorClass, symbol) {
+      return L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div class="custom-pin ${colorClass}">${symbol}</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+        popupAnchor: [0, -14]
+      });
+    }
+
+    const pickupIcon = createPin('pin-pickup', 'P');
+    const dropoffIcon = createPin('pin-dropoff', 'D');
+
+    // Update UI & Form State
+    function updateFormState() {
+      const hasPickup = pickupMarker !== null;
+      const hasDropoff = dropoffMarker !== null;
+
+      if (hasPickup) {
+        const latLng = pickupMarker.getLatLng();
+        pickupLatInput.value = latLng.lat.toFixed(6);
+        pickupLonInput.value = latLng.lng.toFixed(6);
+        pickupCoordsDisplay.textContent = `${latLng.lat.toFixed(5)}, ${latLng.lng.toFixed(5)}`;
+      } else {
+        pickupLatInput.value = '';
+        pickupLonInput.value = '';
+        pickupCoordsDisplay.textContent = 'Not selected';
+      }
+
+      if (hasDropoff) {
+        const latLng = dropoffMarker.getLatLng();
+        dropoffLatInput.value = latLng.lat.toFixed(6);
+        dropoffLonInput.value = latLng.lng.toFixed(6);
+        dropoffCoordsDisplay.textContent = `${latLng.lat.toFixed(5)}, ${latLng.lng.toFixed(5)}`;
+      } else {
+        dropoffLatInput.value = '';
+        dropoffLonInput.value = '';
+        dropoffCoordsDisplay.textContent = 'Not selected';
+      }
+
+      // Draw dashed direct path if both set
+      if (hasPickup && hasDropoff) {
+        if (routeLine) {
+          map.removeLayer(routeLine);
+        }
+        routeLine = L.polyline([pickupMarker.getLatLng(), dropoffMarker.getLatLng()], {
+          color: '#2563eb',
+          dashArray: '6, 8',
+          weight: 3,
+          opacity: 0.8
+        }).addTo(map);
+
+        currentStep = 'done';
+        mapStatus.innerHTML = `✅ <strong>Points set!</strong> Click <em>Calculate Estimated Fare</em> or click <em>Reset Points</em> to change.`;
+        submitBtn.disabled = false;
+        submitHint.textContent = 'Ready to estimate fare!';
+        submitHint.style.color = '#16a34a';
+      } else if (hasPickup && !hasDropoff) {
+        currentStep = 'dropoff';
+        mapStatus.innerHTML = `🏁 Step 2: Now click on the map to place the <strong>Dropoff</strong> point.`;
+        submitBtn.disabled = true;
+        submitHint.textContent = 'Dropoff location needed.';
+        submitHint.style.color = '#64748b';
+      } else {
+        currentStep = 'pickup';
+        mapStatus.innerHTML = `📍 Step 1: Click anywhere on the map to place the <strong>Pickup</strong> point.`;
+        submitBtn.disabled = true;
+        submitHint.textContent = 'Please set both Pickup and Dropoff points on the map.';
+        submitHint.style.color = '#64748b';
+      }
+    }
+
+    let isSnapping = false;
+    let toastTimer = null;
+
+    function showSnapToast(msg, type = 'success') {
+      const toast = document.getElementById('snap-toast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.className = `snap-toast ${type}`;
+      toast.style.display = 'flex';
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.style.display = 'none';
+      }, 4000);
+    }
+
+    function attachDraggableSnap(marker, markerType) {
+      let lastValidLatLng = marker.getLatLng();
+
+      marker.on('dragstart', function() {
+        lastValidLatLng = marker.getLatLng();
+      });
+
+      marker.on('dragend', async function(ev) {
+        const rawPos = ev.target.getLatLng();
+        if (!nycBounds.contains(rawPos)) {
+          showSnapToast('⚠️ Dragged outside NYC service region. Reverting point.', 'error');
+          marker.setLatLng(lastValidLatLng);
+          updateFormState();
+          return;
+        }
+
+        mapStatus.innerHTML = `<span style="color: #2563eb;">⏳ Snapping dragged point to nearest road...</span>`;
+        try {
+          const resp = await fetch('/snap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: rawPos.lat, lon: rawPos.lng })
+          });
+          const data = await resp.json();
+          if (!resp.ok || !data.success) {
+            throw new Error(data.error || 'Point too far from drivable road');
+          }
+
+          const snappedLatLng = L.latLng(data.snapped_lat, data.snapped_lon);
+          marker.setLatLng(snappedLatLng);
+          lastValidLatLng = snappedLatLng;
+          const distText = data.distance < 1 ? '< 1m' : `${data.distance}m`;
+          const streetInfo = data.street_name ? ` on ${data.street_name}` : '';
+          showSnapToast(`✨ Snapped to road${streetInfo} (${distText} away)`, 'success');
+          marker.bindPopup(`<b>${markerType === 'pickup' ? '📍 Pickup' : '🏁 Dropoff'} Location</b><br><small style="color: #16a34a;">Snapped to road${streetInfo} (${distText})</small>`).openPopup();
+          updateFormState();
+        } catch (err) {
+          marker.setLatLng(lastValidLatLng);
+          updateFormState();
+          mapStatus.innerHTML = `⚠️ <strong style="color: #dc2626;">Cannot place marker there:</strong> Point is too far from a drivable road. Reverted to previous road.`;
+          showSnapToast('❌ Dragged point too far from drivable road (>150m)', 'error');
+        }
+      });
+    }
+
+    // Map Click Listener with real-time snap-to-road
+    map.on('click', async function(e) {
+      if (isSnapping) return;
+
+      const latLng = e.latlng;
+
+      // Restrict clicks to NYC TLC service area bounding box
+      if (!nycBounds.contains(latLng)) {
+        mapStatus.innerHTML = `⚠️ <strong style="color: #dc2626;">Coordinates outside the NYC service area!</strong> Please choose a location within the highlighted NYC service region.`;
+        showSnapToast('⚠️ Selected point is outside NYC service area', 'error');
+        return;
+      }
+
+      if (currentStep === 'done') {
+        mapStatus.innerHTML = `💡 Locations already placed. Click <strong>Reset Points</strong> if you wish to choose different coordinates.`;
+        return;
+      }
+
+      // Visual feedback: show in-flight spinner pin at clicked coordinate
+      isSnapping = true;
+      const loadingIcon = L.divIcon({
+        className: 'loading-div-icon',
+        html: '<div class="snap-spinner"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      const loadingMarker = L.marker(latLng, { icon: loadingIcon }).addTo(map);
+      mapStatus.innerHTML = `<span style="color: #2563eb;">⏳ Snapping clicked point to nearest road...</span>`;
+
+      try {
+        const resp = await fetch('/snap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat: latLng.lat, lon: latLng.lng })
+        });
+        const data = await resp.json();
+
+        map.removeLayer(loadingMarker);
+        isSnapping = false;
+
+        if (!resp.ok || !data.success) {
+          // Do NOT place marker
+          mapStatus.innerHTML = `⚠️ <strong style="color: #dc2626;">No drivable road found near that point</strong> — please click closer to a street.`;
+          showSnapToast(`❌ ${data.error || 'Point too far from drivable road (>150m)'}`, 'error');
+          return;
+        }
+
+        // Place marker at snapped coordinates
+        const snappedLatLng = L.latLng(data.snapped_lat, data.snapped_lon);
+        const distText = data.distance < 1 ? '< 1m' : `${data.distance}m`;
+        const streetInfo = data.street_name ? ` on ${data.street_name}` : '';
+        showSnapToast(`✨ Snapped to road${streetInfo} (${distText} away)`, 'success');
+
+        if (currentStep === 'pickup') {
+          if (pickupMarker) map.removeLayer(pickupMarker);
+          pickupMarker = L.marker(snappedLatLng, { icon: pickupIcon, draggable: true }).addTo(map);
+          pickupMarker.bindPopup(`<b>📍 Pickup Location</b><br><small style="color: #16a34a;">Snapped to road${streetInfo} (${distText})</small>`).openPopup();
+          attachDraggableSnap(pickupMarker, 'pickup');
+          updateFormState();
+        } else if (currentStep === 'dropoff') {
+          if (dropoffMarker) map.removeLayer(dropoffMarker);
+          dropoffMarker = L.marker(snappedLatLng, { icon: dropoffIcon, draggable: true }).addTo(map);
+          dropoffMarker.bindPopup(`<b>🏁 Dropoff Location</b><br><small style="color: #16a34a;">Snapped to road${streetInfo} (${distText})</small>`).openPopup();
+          attachDraggableSnap(dropoffMarker, 'dropoff');
+          updateFormState();
+        }
+      } catch (err) {
+        if (map.hasLayer(loadingMarker)) map.removeLayer(loadingMarker);
+        isSnapping = false;
+        mapStatus.innerHTML = `⚠️ <strong style="color: #dc2626;">Road snap request failed.</strong> Please try clicking again closer to a street.`;
+        showSnapToast('❌ Could not verify road proximity', 'error');
+      }
+    });
+
+    // Reset Function
+    function resetPoints() {
+      if (pickupMarker) {
+        map.removeLayer(pickupMarker);
+        pickupMarker = null;
+      }
+      if (dropoffMarker) {
+        map.removeLayer(dropoffMarker);
+        dropoffMarker = null;
+      }
+      if (routeLine) {
+        map.removeLayer(routeLine);
+        routeLine = null;
+      }
+      const toast = document.getElementById('snap-toast');
+      if (toast) toast.style.display = 'none';
+      currentStep = 'pickup';
+      map.setView(nycCenter, 12);
+      updateFormState();
+    }
+
+    // Auto-restore previous coordinates if provided from an error re-render
+    const initPLat = parseFloat(pickupLatInput.value);
+    const initPLon = parseFloat(pickupLonInput.value);
+    const initDLat = parseFloat(dropoffLatInput.value);
+    const initDLon = parseFloat(dropoffLonInput.value);
+
+    if (!isNaN(initPLat) && !isNaN(initPLon) && nycBounds.contains([initPLat, initPLon])) {
+      pickupMarker = L.marker([initPLat, initPLon], { icon: pickupIcon, draggable: true }).addTo(map);
+      pickupMarker.bindPopup('<b>📍 Pickup Location</b>');
+      attachDraggableSnap(pickupMarker, 'pickup');
+    }
+    if (!isNaN(initDLat) && !isNaN(initDLon) && nycBounds.contains([initDLat, initDLon])) {
+      dropoffMarker = L.marker([initDLat, initDLon], { icon: dropoffIcon, draggable: true }).addTo(map);
+      dropoffMarker.bindPopup('<b>🏁 Dropoff Location</b>');
+      attachDraggableSnap(dropoffMarker, 'dropoff');
+    }
+    if (pickupMarker && dropoffMarker) {
+      map.fitBounds([pickupMarker.getLatLng(), dropoffMarker.getLatLng()], { padding: [40, 40] });
+    } else {
+      map.setView(nycCenter, 12);
+    }
+    updateFormState();
+  </script>
+</body>
+</html>
+
